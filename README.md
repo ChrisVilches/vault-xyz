@@ -2,7 +2,7 @@
 
 ## Description
 
-vault-xyz is a web-based file explorer with rich Markdown rendering that integrates seamlessly with Obsidian — drop it into a vault or any directory of files and browse, edit, and search from your browser. It runs as a self-contained Node.js server with a React frontend, requiring no database or external services.
+vault-xyz is a web-based file explorer with rich Markdown rendering for Obsidian vaults or any directory. Browse, edit, and search your files from the browser — no database required.
 
 ## Features
 
