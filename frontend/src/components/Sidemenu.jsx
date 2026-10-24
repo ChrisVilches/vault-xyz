@@ -37,7 +37,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { usePubSub } from "../hooks/usePubSub"
 
-const GITHUB_URL = "https://github.com/ChrisVilches/obs";
+const GITHUB_URL = "https://github.com/ChrisVilches/vault-xyz";
 
 function useExpandTreeToFile(expandPathAll, smoothScroll = true) {
   const [selectedFile, setSelectedFile] = useState(null);

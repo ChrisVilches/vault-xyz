@@ -1,8 +1,8 @@
-# OBS
+# vault-xyz
 
 ## Description
 
-OBS is a web-based file explorer with rich Markdown rendering that integrates seamlessly with Obsidian — drop it into a vault or any directory of files and browse, edit, and search from your browser. It runs as a self-contained Node.js server with a React frontend, requiring no database or external services.
+vault-xyz is a web-based file explorer with rich Markdown rendering that integrates seamlessly with Obsidian — drop it into a vault or any directory of files and browse, edit, and search from your browser. It runs as a self-contained Node.js server with a React frontend, requiring no database or external services.
 
 ## Features
 
@@ -34,10 +34,8 @@ No runtime dependencies. The frontend is compiled to static files and served by 
 
 ### Build the Docker image
 
-TODO: Change the image name.
-
 ```sh
-docker build -t obs-viewer .
+docker build -t vault-xyz .
 ```
 
 ### Run the container
@@ -48,7 +46,7 @@ docker run -p 8080:8080 \
   -e DATA_ROOT_DIR=/data \
   -e CONFIG_PATH=.obsidian \
   -v /path/to/your/files:/data \
-  obs-viewer
+  vault-xyz
 ```
 
 - `PORT` — environment variable for the port the app listens on (defaults to `5000` if not set). Must match the host-side of `-p`.
@@ -68,7 +66,7 @@ docker run -d -p 6001:6001 \
   --network my-custom-network \
   -e EVENT_CHANNEL=file:///event-channel \
   -v /tmp/event-channel:/event-channel \
-  --name obs-viewer obs-viewer
+  --name vault-xyz vault-xyz
 ```
 
 Note: When using `EVENT_CHANNEL=file:///event-channel`, the `/event-channel` file must exist inside the container before starting. You can create it as a regular file (`touch /tmp/event-channel`) or a named pipe (`mkfifo /tmp/event-channel`) on the host — the bind mount makes it available at `/event-channel`.

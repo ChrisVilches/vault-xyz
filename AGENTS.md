@@ -1,4 +1,4 @@
-# OBS (Obsidian File Viewer)
+# vault-xyz (Obsidian File Viewer)
 
 Monorepo: Express 5 backend + React 19 / Vite 6 frontend. Views files from an Obsidian vault.
 
@@ -35,7 +35,7 @@ npm run start         # node backend/src/server.js (production)
 | GET | `/api/files/search?q=<query>` | Full-text search (filenames + content via ripgrep) |
 | GET/POST/DELETE | `/api/bookmarks` | Reads/writes `bookmarks.json` in `CONFIG_PATH` |
 | GET/PATCH | `/api/config` | Reads/writes `app.json` in `CONFIG_PATH` |
-| GET | `/api/files/recently-viewed` | Last 10 files accessed via `/api/files/info`, stored in `/tmp/obs-recently-viewed.json` |
+| GET | `/api/files/recently-viewed` | Last 10 files accessed via `/api/files/info`, stored in `/tmp/vault-xyz-recently-viewed.json` |
 | GET | `/api` | Status endpoint (deps, event channel info) |
 
 ## Frontend

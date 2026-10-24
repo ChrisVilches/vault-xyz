@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const logger = require("../logger");
 
-const VIEWS_FILE = "/tmp/obs-recently-viewed.json";
+const VIEWS_FILE = "/tmp/vault-xyz-recently-viewed.json";
 const MAX_ITEMS = 10;
 
 async function getRecentlyViewed() {
