@@ -1,4 +1,10 @@
-node_modules
+# Patterns without `**/` only match at the context root, so nested
+# node_modules (frontend/, backend/) would otherwise be copied by `COPY . .`
+# over the ones installed in the image, breaking the build with stale or
+# foreign native binaries.
+**/node_modules
+# Build output is regenerated inside the image.
+**/dist
 .git
 .gitignore
 *.md

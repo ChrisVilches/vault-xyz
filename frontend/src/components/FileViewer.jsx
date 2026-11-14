@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -60,6 +61,18 @@ function MarkdownSkeleton() {
   );
 }
 
+// How far `el` is scrolled, as a fraction of how far it can scroll: 0 at the
+// top, 1 at the bottom. An element that can't scroll counts as being at the top.
+function getScrollRatio(el) {
+  const maxScroll = el.scrollHeight - el.clientHeight;
+  return maxScroll > 0 ? el.scrollTop / maxScroll : 0;
+}
+
+// Inverse of getScrollRatio: scrolls `el` to the given fraction.
+function setScrollRatio(el, ratio) {
+  el.scrollTop = ratio * (el.scrollHeight - el.clientHeight);
+}
+
 export default function FileViewer({ file }) {
   const { mutate } = useSWRConfig();
   const infoKey = `/api/files/info?file=${encodeURIComponent(file)}`;
@@ -73,21 +86,51 @@ export default function FileViewer({ file }) {
   const [showConflictModal, setShowConflictModal] = useState(false);
 
   const rootRef = useRef(null);
+  // Viewer scroll position when Edit was clicked, as a ratio (used to place
+  // the textarea) and in pixels (used to return there exactly on Cancel).
   const scrollRatioRef = useRef(0);
+  const viewScrollTopRef = useRef(0);
+  // Where to scroll the viewer once it is shown again after leaving edit mode:
+  // `{ top }` for an exact pixel offset, `{ ratio }` for a fraction, or null
+  // when there is nothing to restore.
+  const pendingViewScrollRef = useRef(null);
+
+  // The viewer doesn't scroll itself: the layout's <main> does. The textarea,
+  // on the other hand, scrolls itself, so pixel offsets can't be carried
+  // between the two; only ratios can.
+  const getViewScroller = useCallback(
+    () => rootRef.current?.closest("main"),
+    [],
+  );
 
   const handleEdit = useCallback(() => {
-    // Remember how far down the viewer was scrolled (0 = top, 1 = bottom), so
-    // the textarea can open at the same place. The viewer scrolls the
-    // layout's <main>, whereas the textarea scrolls itself, so the pixel
-    // offset can't be reused; only the ratio carries over.
-    const scroller = rootRef.current?.closest("main");
-    const maxScroll = scroller
-      ? scroller.scrollHeight - scroller.clientHeight
-      : 0;
-    scrollRatioRef.current = maxScroll > 0 ? scroller.scrollTop / maxScroll : 0;
+    const scroller = getViewScroller();
+    scrollRatioRef.current = scroller ? getScrollRatio(scroller) : 0;
+    viewScrollTopRef.current = scroller?.scrollTop ?? 0;
     setEditMode(true);
-  }, [setEditMode]);
-  const handleCancel = useCallback(() => setEditMode(false), [setEditMode]);
+  }, [getViewScroller]);
+
+  const handleCancel = useCallback(() => {
+    // The content is unchanged, so the viewer lays out as before and the
+    // saved pixel offset brings the user back to the same spot.
+    pendingViewScrollRef.current = { top: viewScrollTopRef.current };
+    setEditMode(false);
+  }, []);
+
+  // useLayoutEffect rather than useEffect so the viewer is scrolled before the
+  // browser paints it, avoiding a visible jump from the top. It runs after
+  // MarkdownViewer's own layout effect (children run first), so this scroll
+  // also wins over its scroll-to-#hash on mount.
+  useLayoutEffect(() => {
+    const pending = pendingViewScrollRef.current;
+    if (editMode || !pending) return;
+    pendingViewScrollRef.current = null;
+
+    const scroller = getViewScroller();
+    if (!scroller) return;
+    if (pending.top !== undefined) scroller.scrollTop = pending.top;
+    else setScrollRatio(scroller, pending.ratio);
+  }, [editMode, getViewScroller]);
 
   useEffect(() => {
     const textarea = fileContentRef.current;
@@ -109,12 +152,16 @@ export default function FileViewer({ file }) {
     // position is set explicitly below.
     textarea.focus({ preventScroll: true });
     textarea.setSelectionRange(caret, caret);
-    textarea.scrollTop =
-      ratio * (textarea.scrollHeight - textarea.clientHeight);
+    setScrollRatio(textarea, ratio);
   }, [editMode, info?.content]);
 
   const saveFile = useCallback(
     async (force) => {
+      // Record where the textarea is scrolled right now. This can't wait until
+      // the save succeeds: when the text changed, refreshing the file info below
+      // re-runs the effect that fills the textarea, and that effect scrolls it
+      // back to where editing began.
+      const textareaScrollRatio = getScrollRatio(fileContentRef.current);
       setSaving(true);
       setShowConflictModal(false);
 
@@ -139,6 +186,9 @@ export default function FileViewer({ file }) {
         saveData.modified
           ? showSuccessToast("Updated")
           : showInfoToast("No changes");
+        // The saved text may have changed length, so a pixel offset would be
+        // meaningless; reuse the textarea's ratio for an approximate position.
+        pendingViewScrollRef.current = { ratio: textareaScrollRatio };
         setEditMode(false);
       } catch (err) {
         if (err.code === "VERSION_CONFLICT") {
