@@ -72,18 +72,45 @@ export default function FileViewer({ file }) {
   const [showFileNameModal, setShowFileNameModal] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
 
-  const handleEdit = useCallback(() => setEditMode(true), [setEditMode]);
+  const rootRef = useRef(null);
+  const scrollRatioRef = useRef(0);
+
+  const handleEdit = useCallback(() => {
+    // Remember how far down the viewer was scrolled (0 = top, 1 = bottom), so
+    // the textarea can open at the same place. The viewer scrolls the
+    // layout's <main>, whereas the textarea scrolls itself, so the pixel
+    // offset can't be reused; only the ratio carries over.
+    const scroller = rootRef.current?.closest("main");
+    const maxScroll = scroller
+      ? scroller.scrollHeight - scroller.clientHeight
+      : 0;
+    scrollRatioRef.current = maxScroll > 0 ? scroller.scrollTop / maxScroll : 0;
+    setEditMode(true);
+  }, [setEditMode]);
   const handleCancel = useCallback(() => setEditMode(false), [setEditMode]);
 
   useEffect(() => {
-    if (!fileContentRef.current || !editMode) return;
+    const textarea = fileContentRef.current;
+    if (!textarea || !editMode) return;
     originalContentRef.current = info.content;
-    fileContentRef.current.value = info.content;
+    textarea.value = info.content;
 
-    // Automatically focus on the first character.
-    fileContentRef.current.focus();
-    fileContentRef.current.setSelectionRange(0, 0);
-    fileContentRef.current.scrollTop = 0;
+    // Put the caret at the start of the line found at the same relative
+    // position in the text, then scroll to the same relative position.
+    // Rendered markdown and raw text don't line up exactly, so the result is
+    // only close to where the user was reading.
+    const ratio = scrollRatioRef.current;
+    const offset = Math.round(ratio * info.content.length);
+    // Move back to the start of the line containing `offset`. Searching from
+    // `offset - 1` keeps the caret in place when `offset` already starts a
+    // line, and `+ 1` turns "no newline found" (-1) into the start of the text.
+    const caret = info.content.lastIndexOf("\n", offset - 1) + 1;
+    // preventScroll stops the browser from scrolling on focus; the scroll
+    // position is set explicitly below.
+    textarea.focus({ preventScroll: true });
+    textarea.setSelectionRange(caret, caret);
+    textarea.scrollTop =
+      ratio * (textarea.scrollHeight - textarea.clientHeight);
   }, [editMode, info?.content]);
 
   const saveFile = useCallback(
@@ -199,7 +226,7 @@ export default function FileViewer({ file }) {
   const type = info.type;
 
   return (
-    <div className="min-h-full flex flex-col">
+    <div ref={rootRef} className="min-h-full flex flex-col">
       {editMode ? (
         <textarea
           ref={fileContentRef}
