@@ -46,16 +46,6 @@ export default function Dashboard() {
           </section>
           <section>
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Ongoing TODOs
-            </h2>
-            <FileList
-              items={todosData?.todos || []}
-              loading={todosLoading}
-              emptyMessage="No open TODOs found."
-            />
-          </section>
-          <section>
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Recently Viewed
             </h2>
             <FileList
@@ -63,6 +53,16 @@ export default function Dashboard() {
               showTime
               loading={viewedLoading}
               emptyMessage="No recently viewed files."
+            />
+          </section>
+          <section>
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              Ongoing TODOs
+            </h2>
+            <FileList
+              items={todosData?.todos || []}
+              loading={todosLoading}
+              emptyMessage="No open TODOs found."
             />
           </section>
           <section>
